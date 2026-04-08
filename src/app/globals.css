@@ -139,6 +139,7 @@ body::before {
   -webkit-text-fill-color: transparent;
   animation: titleShimmer 4s ease-in-out infinite;
   filter: drop-shadow(0 0 30px rgba(249, 115, 22, 0.35));
+  padding-right: 0.15em;
 }
 
 @keyframes titleShimmer {
