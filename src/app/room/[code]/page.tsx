@@ -13,6 +13,7 @@ interface Room {
   status: "lobby" | "playing" | "finished";
   current_round: number;
   question_bank_id: string | null;
+  question_revealed: boolean;
 }
 
 interface Challenger {
@@ -36,7 +37,6 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [showQuestion, setShowQuestion] = useState(false);
   const [roundTransition, setRoundTransition] = useState(false);
   const [recentlyLeveled, setRecentlyLeveled] = useState<Record<string, boolean>>({});
   const [customQuestions, setCustomQuestions] = useState<Question[]>([]);
@@ -56,26 +56,17 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     async function loadRoom() {
       const { data: roomData, error: roomError } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("code", code.toUpperCase())
-        .maybeSingle();
+        .from("rooms").select("*").eq("code", code.toUpperCase()).maybeSingle();
 
-      if (roomError || !roomData) {
-        setError("Room not found.");
-        setLoading(false);
-        return;
-      }
+      if (roomError || !roomData) { setError("Room not found."); setLoading(false); return; }
 
       setRoom(roomData);
       setIsHost(roomData.host_claim_id === claimId);
       await fetchChallengers(roomData.id);
 
-      // Load custom questions if a bank is linked
       if (roomData.question_bank_id) {
         const { data: cqs } = await supabase
-          .from("custom_questions")
-          .select("type, text")
+          .from("custom_questions").select("type, text")
           .eq("bank_id", roomData.question_bank_id)
           .order("sort_order", { ascending: true });
         if (cqs && cqs.length > 0) {
@@ -85,11 +76,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
       if (claimId) {
         const { data: existing } = await supabase
-          .from("challengers")
-          .select("id")
-          .eq("room_id", roomData.id)
-          .eq("claim_id", claimId)
-          .maybeSingle();
+          .from("challengers").select("id").eq("room_id", roomData.id).eq("claim_id", claimId).maybeSingle();
         if (existing) setHasJoined(true);
       }
 
@@ -97,12 +84,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
       const channel = supabase.channel(`room-${roomData.id}`);
       channel
-        .on("postgres_changes", {
-          event: "*",
-          schema: "public",
-          table: "challengers",
-          filter: `room_id=eq.${roomData.id}`,
-        }, (payload) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "challengers", filter: `room_id=eq.${roomData.id}` }, (payload) => {
           if (payload.eventType === "UPDATE" && payload.new && payload.old) {
             if ((payload.new as Challenger).level > (payload.old as Challenger).level) {
               triggerFire((payload.new as Challenger).id);
@@ -110,18 +92,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           }
           fetchChallengers(roomData.id);
         })
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "rooms",
-          filter: `id=eq.${roomData.id}`,
-        }, (payload) => {
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${roomData.id}` }, (payload) => {
           const newRoom = payload.new as Room;
           setRoom((prev) => {
             if (prev && newRoom.current_round > prev.current_round) {
-              // New round started — show transition
               setRoundTransition(true);
-              setShowQuestion(false);
               setTimeout(() => setRoundTransition(false), 2500);
             }
             return newRoom;
@@ -137,23 +112,14 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   function triggerFire(id: string) {
     setRecentlyLeveled((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => {
-      setRecentlyLeveled((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }, 800);
+    setTimeout(() => { setRecentlyLeveled((prev) => { const next = { ...prev }; delete next[id]; return next; }); }, 800);
   }
 
   async function joinGame() {
     if (!playerName.trim() || !room) return;
     setError("");
     const claimId = myClaimId || crypto.randomUUID();
-    if (!myClaimId) {
-      localStorage.setItem("hot_ones_claim_id", claimId);
-      setMyClaimId(claimId);
-    }
+    if (!myClaimId) { localStorage.setItem("hot_ones_claim_id", claimId); setMyClaimId(claimId); }
     const { error: insertError } = await supabase.from("challengers").insert({
       name: playerName.trim(), level: 0, dnf: false, claim_id: claimId, room_id: room.id,
     });
@@ -164,7 +130,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   async function startGame() {
     if (!room || !isHost) return;
-    await supabase.from("rooms").update({ status: "playing", current_round: 1 }).eq("id", room.id);
+    await supabase.from("rooms").update({ status: "playing", current_round: 1, question_revealed: false }).eq("id", room.id);
+  }
+
+  async function revealQuestion() {
+    if (!room || !isHost) return;
+    await supabase.from("rooms").update({ question_revealed: true }).eq("id", room.id);
   }
 
   async function nextRound() {
@@ -172,7 +143,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     if (room.current_round >= 10) {
       await supabase.from("rooms").update({ status: "finished" }).eq("id", room.id);
     } else {
-      await supabase.from("rooms").update({ current_round: room.current_round + 1 }).eq("id", room.id);
+      await supabase.from("rooms").update({ current_round: room.current_round + 1, question_revealed: false }).eq("id", room.id);
     }
   }
 
@@ -359,6 +330,21 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     : question.text;
   const me = challengers.find((c) => c.claim_id === myClaimId);
   const iCompletedRound = me ? me.level >= round : false;
+  const questionRevealed = room!.question_revealed;
+
+  // Player status strip (reused)
+  const playerStrip = (
+    <div className="flex flex-wrap justify-center gap-2 mt-4">
+      {challengers.map((c) => (
+        <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+          c.dnf ? "bg-red-900/30 text-red-400" : c.level >= round ? "bg-green-900/30 text-green-400" : "bg-zinc-800 text-zinc-500"
+        }`}>
+          <span>{c.name}</span>
+          {c.dnf ? <span>&#x1F480;</span> : c.level >= round ? <span>&#x2713;</span> : <span>&#x1F525;</span>}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -373,8 +359,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           <p className="text-zinc-400 mt-3 text-lg">{sauce.shu} SHU</p>
           <div className="mt-8 flex gap-1">
             {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className={`w-6 h-2 rounded-full transition-all duration-500 ${i < round ? getHeatColor(i + 1) : "bg-zinc-800"}`}
-                style={{ animationDelay: `${i * 100}ms` }} />
+              <div key={i} className={`w-6 h-2 rounded-full transition-all duration-500 ${i < round ? getHeatColor(i + 1) : "bg-zinc-800"}`} />
             ))}
           </div>
         </div>
@@ -401,9 +386,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       <main className="flex-grow flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full">
         {/* Round + Sauce */}
         <div className="text-center mb-6">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">
-            Round {round} of 10
-          </p>
+          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Round {round} of 10</p>
           <h2 className="text-3xl md:text-5xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic mt-1"
             style={{ textShadow: "0 0 20px rgba(255, 68, 0, 0.4)" }}>
             {sauce.name}
@@ -418,15 +401,14 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           ))}
         </div>
 
-        {/* Question Card */}
-        {!showQuestion ? (
+        {/* Phase 1: Eat Your Wing */}
+        {!questionRevealed ? (
           <div className="w-full">
-            <div className="sauce-card rounded-2xl p-8 text-center border-t-4 border-orange-600">
+            <div className="sauce-card rounded-2xl p-6 md:p-8 text-center border-t-4 border-orange-600">
               <p className="text-3xl mb-3">&#x1F357;</p>
               <p className="text-xl font-black uppercase italic text-white">Eat Your Wing!</p>
               <p className="text-zinc-500 text-sm mt-2">Apply {sauce.name} and eat together</p>
 
-              {/* Mark yourself as done */}
               {me && !me.dnf && (
                 <div className="mt-6 flex flex-col items-center gap-3">
                   {!iCompletedRound ? (
@@ -438,7 +420,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     <span className="text-green-500 font-bold text-sm uppercase">&#x2713; Done</span>
                   )}
                   <button onClick={() => toggleDNF(me.id, me.dnf, me.claim_id)}
-                    className="text-zinc-600 hover:text-red-500 text-[10px] font-bold uppercase transition-colors cursor-pointer">
+                    className="text-zinc-600 hover:text-red-500 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
                     I Tap Out
                   </button>
                 </div>
@@ -447,35 +429,32 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 <div className="mt-6 flex flex-col items-center gap-2">
                   <span className="text-red-500 font-bold text-sm uppercase">You tapped out</span>
                   <button onClick={() => toggleDNF(me.id, me.dnf, me.claim_id)}
-                    className="text-zinc-600 hover:text-green-500 text-[10px] font-bold uppercase transition-colors cursor-pointer">
+                    className="text-zinc-600 hover:text-green-500 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
                     Get Back In?
                   </button>
                 </div>
               )}
 
               {isHost && (
-                <button onClick={() => setShowQuestion(true)}
-                  className="mt-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase px-6 py-2 rounded-lg transition-colors cursor-pointer text-xs">
+                <button onClick={revealQuestion}
+                  className="mt-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase px-6 py-2.5 rounded-lg transition-colors cursor-pointer text-xs">
                   Reveal Question
                 </button>
               )}
+              {!isHost && (
+                <p className="mt-6 text-zinc-600 text-[10px] uppercase tracking-widest animate-pulse">
+                  Host will reveal the question...
+                </p>
+              )}
             </div>
-
-            {/* Player status strip */}
-            <div className="flex flex-wrap justify-center gap-2 mt-4">
-              {challengers.map((c) => (
-                <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-                  c.dnf ? "bg-red-900/30 text-red-400" : c.level >= round ? "bg-green-900/30 text-green-400" : "bg-zinc-800 text-zinc-500"
-                }`}>
-                  <span>{c.name}</span>
-                  {c.dnf ? <span>&#x1F480;</span> : c.level >= round ? <span>&#x2713;</span> : <span>&#x1F525;</span>}
-                </div>
-              ))}
-            </div>
+            {playerStrip}
           </div>
         ) : (
+          /* Phase 2: Question Revealed */
           <div className="w-full animate-slide-up">
-            <div className="sauce-card rounded-2xl p-8 text-center border-t-4" style={{ borderTopColor: question.type === "roast" ? "#ef4444" : question.type === "wouldyourather" ? "#a855f7" : question.type === "challenge" ? "#eab308" : "#3b82f6" }}>
+            <div className="sauce-card rounded-2xl p-6 md:p-8 text-center border-t-4" style={{
+              borderTopColor: question.type === "roast" ? "#ef4444" : question.type === "wouldyourather" ? "#a855f7" : question.type === "challenge" ? "#eab308" : "#3b82f6"
+            }}>
               <p className={`text-[10px] uppercase tracking-widest font-black mb-4 ${getTypeColor(question.type)}`}>
                 {getTypeLabel(question.type)}
               </p>
@@ -485,19 +464,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
               {question.type === "truth" && (
                 <p className="text-zinc-500 text-xs mt-4 italic">Answer honestly... or take a dab of {sauce.name}</p>
               )}
+
+              {/* DNF option still available during question */}
+              {me && !me.dnf && !iCompletedRound && (
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <button onClick={() => markComplete(me.id, me.claim_id)}
+                    className="bg-orange-600/20 hover:bg-orange-600/30 text-orange-500 font-bold uppercase px-6 py-2 rounded-lg transition-colors cursor-pointer text-xs border border-orange-600/20">
+                    I Ate It &#x1F525;
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Player status strip */}
-            <div className="flex flex-wrap justify-center gap-2 mt-4">
-              {challengers.map((c) => (
-                <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-                  c.dnf ? "bg-red-900/30 text-red-400" : c.level >= round ? "bg-green-900/30 text-green-400" : "bg-zinc-800 text-zinc-500"
-                }`}>
-                  <span>{c.name}</span>
-                  {c.dnf ? <span>&#x1F480;</span> : c.level >= round ? <span>&#x2713;</span> : <span>&#x1F525;</span>}
-                </div>
-              ))}
-            </div>
+            {playerStrip}
 
             {/* Host: next round */}
             {isHost && (
@@ -507,6 +486,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                   {round >= 10 ? "Finish Game" : "Next Round"}
                 </button>
               </div>
+            )}
+            {!isHost && (
+              <p className="text-center mt-6 text-zinc-600 text-[10px] uppercase tracking-widest animate-pulse">
+                Host will advance to the next round...
+              </p>
             )}
           </div>
         )}
