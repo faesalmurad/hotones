@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { SAUCES, getCurrentSauce, getHeatColor } from "@/lib/constants";
-import { getQuestionForRound, getHotSeatIndex, getTypeLabel, getTypeColor } from "@/lib/questions";
+import { getQuestionForRound, getHotSeatIndex, getTypeLabel, getTypeColor, type Question } from "@/lib/questions";
 
 interface Room {
   id: string;
@@ -12,6 +12,7 @@ interface Room {
   host_claim_id: string;
   status: "lobby" | "playing" | "finished";
   current_round: number;
+  question_bank_id: string | null;
 }
 
 interface Challenger {
@@ -38,6 +39,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const [showQuestion, setShowQuestion] = useState(false);
   const [roundTransition, setRoundTransition] = useState(false);
   const [recentlyLeveled, setRecentlyLeveled] = useState<Record<string, boolean>>({});
+  const [customQuestions, setCustomQuestions] = useState<Question[]>([]);
 
   const fetchChallengers = useCallback(async (roomId: string) => {
     const { data } = await supabase
@@ -68,6 +70,18 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       setRoom(roomData);
       setIsHost(roomData.host_claim_id === claimId);
       await fetchChallengers(roomData.id);
+
+      // Load custom questions if a bank is linked
+      if (roomData.question_bank_id) {
+        const { data: cqs } = await supabase
+          .from("custom_questions")
+          .select("type, text")
+          .eq("bank_id", roomData.question_bank_id)
+          .order("sort_order", { ascending: true });
+        if (cqs && cqs.length > 0) {
+          setCustomQuestions(cqs.map((q) => ({ type: q.type, text: q.text })) as Question[]);
+        }
+      }
 
       if (claimId) {
         const { data: existing } = await supabase
@@ -253,9 +267,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           </div>
         </div>
 
+        {customQuestions.length > 0 && (
+          <p className="mt-4 text-zinc-600 text-[10px] uppercase tracking-widest text-center">
+            Custom questions loaded ({customQuestions.length})
+          </p>
+        )}
+
         {isHost && (
           <button onClick={startGame} disabled={challengers.length < 2}
-            className="mt-8 bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase text-lg px-12 py-4 rounded-xl transition-colors cursor-pointer">
+            className="mt-6 bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase text-lg px-12 py-4 rounded-xl transition-colors cursor-pointer">
             {challengers.length < 2 ? "Waiting for players..." : "Start Game"}
           </button>
         )}
@@ -330,7 +350,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   // ─── PLAYING ───
   const round = room!.current_round;
   const sauce = SAUCES[round - 1];
-  const question = getQuestionForRound(round, code);
+  const question = getQuestionForRound(round, code, customQuestions.length > 0 ? customQuestions : undefined);
   const activePlayers = challengers.filter((c) => !c.dnf);
   const hotSeatIdx = getHotSeatIndex(round, code, activePlayers.length);
   const hotSeatPlayer = activePlayers[hotSeatIdx];

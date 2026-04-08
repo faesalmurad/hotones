@@ -74,16 +74,18 @@ const ALL_QUESTIONS = [...TRUTH_QUESTIONS, ...WOULD_YOU_RATHER, ...ROAST_QUESTIO
 /**
  * Get a deterministic but shuffled question for a given round and room code.
  * This ensures all players see the same question without needing DB storage.
+ * If customQuestions are provided, those are used instead.
  */
-export function getQuestionForRound(round: number, roomCode: string): Question {
+export function getQuestionForRound(round: number, roomCode: string, customQuestions?: Question[]): Question {
+  const pool = customQuestions && customQuestions.length > 0 ? customQuestions : ALL_QUESTIONS;
   // Simple hash from room code + round to get consistent index
   let hash = 0;
   const seed = `${roomCode}-${round}`;
   for (let i = 0; i < seed.length; i++) {
     hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   }
-  const index = Math.abs(hash) % ALL_QUESTIONS.length;
-  return ALL_QUESTIONS[index];
+  const index = Math.abs(hash) % pool.length;
+  return pool[index];
 }
 
 /**
