@@ -37,7 +37,6 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
   const [copied, setCopied] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
-  // New question form
   const [newType, setNewType] = useState<QuestionType>("truth");
   const [newText, setNewText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -104,7 +103,7 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-500 text-sm uppercase tracking-widest animate-pulse">Loading...</div>
+        <div className="text-zinc-600 text-[10px] uppercase tracking-[0.4em] font-bold animate-pulse">Loading...</div>
       </div>
     );
   }
@@ -112,45 +111,47 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
   if (error || !bank) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-red-500">{error}</p>
-        <button onClick={() => router.push("/questions")} className="text-zinc-400 underline text-sm cursor-pointer">Back</button>
+        <p className="text-red-500 font-semibold">{error}</p>
+        <button onClick={() => router.push("/questions")} className="text-zinc-500 hover:text-white text-sm cursor-pointer transition-colors">Back</button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 relative">
+      <div className="ember-field" />
+      <div className="max-w-2xl mx-auto relative z-10">
         {/* Header */}
         <header className="mb-8">
           <button onClick={() => router.push("/questions")}
-            className="text-zinc-600 hover:text-white text-xs uppercase tracking-widest mb-4 block cursor-pointer">
+            className="text-zinc-600 hover:text-white text-[11px] uppercase tracking-[0.2em] font-bold mb-4 block cursor-pointer transition-colors">
             &larr; Back
           </button>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic leading-none tracking-tight"
-                style={{ textShadow: "0 0 20px rgba(255, 68, 0, 0.3)" }}>
+              <h1 className="title-fire text-3xl md:text-4xl font-[family-name:var(--font-archivo)] uppercase italic leading-none tracking-tight">
                 {bank.name}
               </h1>
-              <p className="text-zinc-500 text-sm mt-1">{questions.length} question{questions.length !== 1 ? "s" : ""}</p>
+              <p className="text-zinc-600 text-sm mt-1.5 font-medium">{questions.length} question{questions.length !== 1 ? "s" : ""}</p>
             </div>
             <button onClick={copyCode}
-              className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-orange-600/50 px-4 py-2 rounded-lg transition-colors cursor-pointer">
-              <span className="text-orange-600 font-black text-lg tracking-wider">{code.toUpperCase()}</span>
-              <span className="text-zinc-500 text-[10px] uppercase">{copied ? "Copied!" : "Copy"}</span>
+              className="flex items-center gap-2 sauce-card hover:border-orange-600/20 px-4 py-2 rounded-lg cursor-pointer">
+              <span className="text-orange-500 font-black text-lg tracking-wider">{code.toUpperCase()}</span>
+              <span className="text-zinc-600 text-[10px] uppercase font-bold">{copied ? "Copied!" : "Copy"}</span>
             </button>
           </div>
         </header>
 
         {/* Add Question Form */}
         {isOwner && (
-          <div className="sauce-card rounded-xl p-5 mb-6 border-t-2 border-orange-600">
-            <div className="flex gap-2 mb-3">
+          <div className="sauce-card-active rounded-xl p-5 mb-6 border-t-2 border-orange-600">
+            <div className="flex flex-wrap gap-2 mb-3">
               {QUESTION_TYPES.map((t) => (
                 <button key={t.value} onClick={() => setNewType(t.value)}
-                  className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                    newType === t.value ? "bg-orange-600 text-black" : "bg-zinc-800 text-zinc-500 hover:text-white"
+                  className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    newType === t.value
+                      ? "bg-orange-600 text-black shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                      : "bg-white/[0.03] border border-white/[0.06] text-zinc-500 hover:text-white hover:border-white/[0.12]"
                   }`}>
                   {t.label}
                 </button>
@@ -160,9 +161,9 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
               <input type="text" value={newText} onChange={(e) => setNewText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addQuestion()}
                 placeholder={newType === "roast" ? "Use {player} for the spotlighted name..." : "Type your question..."}
-                className="flex-grow bg-zinc-900 border border-zinc-800 p-3 px-4 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-600 transition-colors text-sm" />
+                className="input-dark flex-grow p-3 px-4 rounded-lg text-sm font-medium" />
               <button onClick={addQuestion} disabled={adding || !newText.trim()}
-                className="bg-orange-600 hover:bg-orange-500 disabled:opacity-30 px-5 py-3 rounded-lg font-black uppercase text-black text-sm transition-colors cursor-pointer">
+                className="btn-fire px-5 py-3 rounded-lg text-sm cursor-pointer">
                 Add
               </button>
             </div>
@@ -174,9 +175,9 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
           {questions.map((q, i) => (
             <div key={q.id} className="sauce-card rounded-lg p-4 flex items-start gap-3 group animate-fade-in"
               style={{ animationDelay: `${i * 30}ms` }}>
-              <span className="text-zinc-600 font-black text-sm mt-0.5 w-6 shrink-0">{i + 1}</span>
+              <span className="text-zinc-700 font-black text-sm mt-0.5 w-6 shrink-0 text-center">{i + 1}</span>
               <div className="flex-grow min-w-0">
-                <span className={`text-[9px] font-bold uppercase tracking-wider ${getTypeColor(q.type)}`}>
+                <span className={`text-[9px] font-bold uppercase tracking-[0.2em] ${getTypeColor(q.type)}`}>
                   {getTypeLabel(q.type)}
                 </span>
                 {editingId === q.id ? (
@@ -184,11 +185,11 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
                     <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") saveEdit(q.id); if (e.key === "Escape") setEditingId(null); }}
                       autoFocus
-                      className="flex-grow bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-sm focus:outline-none focus:border-orange-600" />
+                      className="input-dark flex-grow p-2 rounded text-sm" />
                     <button onClick={() => saveEdit(q.id)}
-                      className="text-green-500 text-xs font-bold uppercase cursor-pointer">Save</button>
+                      className="text-green-400 text-xs font-bold uppercase cursor-pointer hover:text-green-300 transition-colors">Save</button>
                     <button onClick={() => setEditingId(null)}
-                      className="text-zinc-500 text-xs font-bold uppercase cursor-pointer">Cancel</button>
+                      className="text-zinc-500 text-xs font-bold uppercase cursor-pointer hover:text-zinc-300 transition-colors">Cancel</button>
                   </div>
                 ) : (
                   <p className="text-white text-sm mt-0.5 leading-relaxed">{q.text}</p>
@@ -197,16 +198,16 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
               {isOwner && editingId !== q.id && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button onClick={() => { setEditingId(q.id); setEditText(q.text); }}
-                    className="text-zinc-600 hover:text-white text-xs cursor-pointer p-1">Edit</button>
+                    className="text-zinc-600 hover:text-white text-xs cursor-pointer p-1 font-bold transition-colors">Edit</button>
                   <button onClick={() => deleteQuestion(q.id)}
-                    className="text-zinc-600 hover:text-red-500 text-xs cursor-pointer p-1">Delete</button>
+                    className="text-zinc-600 hover:text-red-400 text-xs cursor-pointer p-1 font-bold transition-colors">Delete</button>
                 </div>
               )}
             </div>
           ))}
           {questions.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-zinc-600 text-sm">No questions yet. Add some above!</p>
+            <div className="text-center py-16">
+              <p className="text-zinc-700 text-sm font-medium">No questions yet. Add some above!</p>
             </div>
           )}
         </div>
@@ -214,8 +215,8 @@ export default function QuestionBankEditor({ params }: { params: Promise<{ code:
         {/* Usage hint */}
         {questions.length > 0 && (
           <div className="mt-8 text-center">
-            <p className="text-zinc-600 text-xs">
-              Use code <span className="text-orange-600 font-bold">{code.toUpperCase()}</span> when creating a room to use these questions
+            <p className="text-zinc-600 text-xs font-medium">
+              Use code <span className="text-orange-500 font-bold">{code.toUpperCase()}</span> when creating a room to use these questions
             </p>
           </div>
         )}

@@ -19,7 +19,6 @@ export default function Home() {
     setLoading(true);
     setError("");
 
-    // Optionally resolve question bank
     let questionBankId: string | null = null;
     if (bankCode.trim().length === 4) {
       const { data: bankData } = await supabase
@@ -78,60 +77,75 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="text-center mb-12 animate-fade-in">
-        <h1 className="text-6xl md:text-8xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic leading-none tracking-tight"
-          style={{ textShadow: "0 0 30px rgba(255, 68, 0, 0.4)" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      {/* Floating embers */}
+      <div className="ember-field" />
+
+      {/* Hero */}
+      <div className="text-center mb-14 animate-fade-in relative z-10">
+        <h1 className="title-fire text-7xl md:text-9xl font-[family-name:var(--font-archivo)] uppercase italic leading-none tracking-tight">
           Hot Ones
         </h1>
-        <p className="text-xs text-zinc-500 tracking-[0.5em] uppercase mt-3 font-bold">Season 28 Live</p>
-        <p className="text-zinc-400 mt-4 text-sm max-w-md mx-auto">
+        <div className="flex justify-center mt-4">
+          <div className="live-badge">
+            <span className="live-dot" />
+            <span className="text-[10px] text-red-400/80 tracking-[0.4em] uppercase font-bold">Live</span>
+          </div>
+        </div>
+        <p className="text-zinc-500 mt-5 text-sm max-w-sm mx-auto leading-relaxed font-medium">
           Create a room, share the code with friends, and see who can handle the heat.
         </p>
       </div>
 
-      <div className="w-full max-w-sm space-y-4 animate-slide-up">
-        {!showCreate ? (
-          <button onClick={() => setShowCreate(true)}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black uppercase text-lg py-4 rounded-xl transition-colors cursor-pointer">
-            Create Room
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <input type="text" value={hostName} onChange={(e) => setHostName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && createRoom()} placeholder="Your name..." autoFocus
-                className="flex-grow bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-600 transition-colors" />
-              <button onClick={createRoom} disabled={loading || !hostName.trim()}
-                className="bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase px-6 rounded-xl transition-colors cursor-pointer">
-                {loading ? "..." : "Go"}
-              </button>
+      {/* Action area */}
+      <div className="w-full max-w-sm space-y-4 relative z-10" style={{ animationDelay: '150ms' }}>
+        <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+          {!showCreate ? (
+            <button onClick={() => setShowCreate(true)}
+              className="btn-fire w-full text-lg py-4 rounded-xl cursor-pointer tracking-wide">
+              Create Room
+            </button>
+          ) : (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex gap-2">
+                <input type="text" value={hostName} onChange={(e) => setHostName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && createRoom()} placeholder="Your name..." autoFocus
+                  className="input-dark flex-grow p-4 rounded-xl font-semibold" />
+                <button onClick={createRoom} disabled={loading || !hostName.trim()}
+                  className="btn-fire px-7 rounded-xl cursor-pointer text-sm">
+                  {loading ? "..." : "Go"}
+                </button>
+              </div>
+              <input type="text" value={bankCode} onChange={(e) => setBankCode(e.target.value.toUpperCase().slice(0, 4))}
+                placeholder="Question bank code (optional)" maxLength={4}
+                className="input-dark w-full p-3 rounded-lg text-center text-sm tracking-wider uppercase font-medium" />
             </div>
-            <input type="text" value={bankCode} onChange={(e) => setBankCode(e.target.value.toUpperCase().slice(0, 4))}
-              placeholder="Question bank code (optional)" maxLength={4}
-              className="w-full bg-zinc-900/50 border border-zinc-800/50 p-3 rounded-lg text-center text-sm text-zinc-400 placeholder:text-zinc-700 focus:outline-none focus:border-orange-600/50 transition-colors uppercase tracking-wider" />
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 text-zinc-600 text-xs uppercase tracking-widest">
-          <div className="flex-grow h-px bg-zinc-800" /><span>or join</span><div className="flex-grow h-px bg-zinc-800" />
+          )}
         </div>
 
-        <div className="flex gap-2">
+        {/* Divider */}
+        <div className="flex items-center gap-4 py-1 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div className="heat-divider flex-grow" />
+          <span className="text-zinc-600 text-[10px] uppercase tracking-[0.3em] font-bold">or join</span>
+          <div className="heat-divider flex-grow" />
+        </div>
+
+        {/* Join */}
+        <div className="flex gap-2 animate-slide-up" style={{ animationDelay: '300ms' }}>
           <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 4))}
             onKeyDown={(e) => e.key === "Enter" && joinRoom()} placeholder="ABCD" maxLength={4}
-            className="flex-grow bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-center text-2xl font-black uppercase tracking-[0.3em] text-white placeholder:text-zinc-700 focus:outline-none focus:border-orange-600 transition-colors" />
+            className="input-dark flex-grow p-4 rounded-xl text-center text-2xl font-black uppercase tracking-[0.3em]" />
           <button onClick={joinRoom} disabled={loading || joinCode.length !== 4}
-            className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-white font-black uppercase px-6 rounded-xl transition-colors cursor-pointer">
+            className="btn-ghost px-7 rounded-xl cursor-pointer text-sm disabled:opacity-20">
             Join
           </button>
         </div>
 
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center font-semibold animate-fade-in">{error}</p>}
 
-        <div className="pt-4 text-center">
+        <div className="pt-6 text-center animate-slide-up" style={{ animationDelay: '400ms' }}>
           <button onClick={() => router.push("/questions")}
-            className="text-zinc-600 hover:text-orange-600 text-xs uppercase tracking-widest transition-colors cursor-pointer">
+            className="text-zinc-600 hover:text-orange-500 text-[11px] uppercase tracking-[0.2em] font-bold transition-colors cursor-pointer">
             Create Custom Questions
           </button>
         </div>

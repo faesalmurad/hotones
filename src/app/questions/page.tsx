@@ -57,53 +57,58 @@ export default function QuestionsLanding() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="text-center mb-10 animate-fade-in">
-        <button onClick={() => router.push("/")} className="text-zinc-600 hover:text-white text-xs uppercase tracking-widest mb-6 block cursor-pointer">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      <div className="ember-field" />
+
+      <div className="text-center mb-10 animate-fade-in relative z-10">
+        <button onClick={() => router.push("/")} className="text-zinc-600 hover:text-white text-[11px] uppercase tracking-[0.2em] font-bold mb-6 block cursor-pointer transition-colors">
           &larr; Back
         </button>
-        <h1 className="text-4xl md:text-6xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic leading-none tracking-tight"
-          style={{ textShadow: "0 0 30px rgba(255, 68, 0, 0.4)" }}>
+        <h1 className="title-fire text-4xl md:text-6xl font-[family-name:var(--font-archivo)] uppercase italic leading-none tracking-tight">
           Question Banks
         </h1>
-        <p className="text-zinc-400 mt-3 text-sm max-w-md mx-auto">
+        <p className="text-zinc-500 mt-4 text-sm max-w-md mx-auto leading-relaxed font-medium">
           Create a custom set of questions. Reuse them across games with a short code.
         </p>
       </div>
 
-      <div className="w-full max-w-sm space-y-4 animate-slide-up">
-        {!showCreate ? (
-          <button onClick={() => setShowCreate(true)}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black uppercase text-lg py-4 rounded-xl transition-colors cursor-pointer">
-            Create New Bank
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && createBank()} placeholder="Bank name..." autoFocus
-              className="flex-grow bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-600 transition-colors" />
-            <button onClick={createBank} disabled={loading || !bankName.trim()}
-              className="bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase px-6 rounded-xl transition-colors cursor-pointer">
-              {loading ? "..." : "Go"}
+      <div className="w-full max-w-sm space-y-4 relative z-10">
+        <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+          {!showCreate ? (
+            <button onClick={() => setShowCreate(true)}
+              className="btn-fire w-full text-lg py-4 rounded-xl cursor-pointer tracking-wide">
+              Create New Bank
             </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 text-zinc-600 text-xs uppercase tracking-widest">
-          <div className="flex-grow h-px bg-zinc-800" /><span>or load existing</span><div className="flex-grow h-px bg-zinc-800" />
+          ) : (
+            <div className="flex gap-2 animate-fade-in">
+              <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && createBank()} placeholder="Bank name..." autoFocus
+                className="input-dark flex-grow p-4 rounded-xl font-semibold" />
+              <button onClick={createBank} disabled={loading || !bankName.trim()}
+                className="btn-fire px-7 rounded-xl cursor-pointer text-sm">
+                {loading ? "..." : "Go"}
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4 py-1 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div className="heat-divider flex-grow" />
+          <span className="text-zinc-600 text-[10px] uppercase tracking-[0.3em] font-bold">or load existing</span>
+          <div className="heat-divider flex-grow" />
+        </div>
+
+        <div className="flex gap-2 animate-slide-up" style={{ animationDelay: '300ms' }}>
           <input type="text" value={loadCode} onChange={(e) => setLoadCode(e.target.value.toUpperCase().slice(0, 4))}
             onKeyDown={(e) => e.key === "Enter" && loadBank()} placeholder="ABCD" maxLength={4}
-            className="flex-grow bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-center text-2xl font-black uppercase tracking-[0.3em] text-white placeholder:text-zinc-700 focus:outline-none focus:border-orange-600 transition-colors" />
+            className="input-dark flex-grow p-4 rounded-xl text-center text-2xl font-black uppercase tracking-[0.3em]" />
           <button onClick={loadBank} disabled={loading || loadCode.length !== 4}
-            className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-white font-black uppercase px-6 rounded-xl transition-colors cursor-pointer">
+            className="btn-ghost px-7 rounded-xl cursor-pointer text-sm disabled:opacity-20">
             Load
           </button>
         </div>
 
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center font-semibold animate-fade-in">{error}</p>}
       </div>
     </div>
   );

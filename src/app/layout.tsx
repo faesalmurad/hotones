@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Archivo_Black } from "next/font/google";
+import { Archivo_Black, Barlow } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const barlow = Barlow({
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-barlow",
 });
 
 const archivoBlack = Archivo_Black({
@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${archivoBlack.variable}`}>
-      <body className="min-h-screen font-[family-name:var(--font-inter)]">{children}</body>
+    <html lang="en" className={`${barlow.variable} ${archivoBlack.variable}`}>
+      <body className="min-h-screen font-[family-name:var(--font-barlow)]">{children}</body>
     </html>
   );
 }

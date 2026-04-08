@@ -168,11 +168,22 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // Heat intensity helper — returns CSS for escalating intensity
+  function getHeatIntensity(round: number) {
+    if (round <= 3) return { glow: 'rgba(251, 191, 36, 0.3)', color: '#fbbf24' };
+    if (round <= 6) return { glow: 'rgba(249, 115, 22, 0.4)', color: '#f97316' };
+    if (round <= 9) return { glow: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' };
+    return { glow: 'rgba(168, 85, 247, 0.5)', color: '#a855f7' };
+  }
+
   // ─── LOADING ───
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-500 text-sm uppercase tracking-widest animate-pulse">Loading room...</div>
+        <div className="ember-field" />
+        <div className="relative z-10 text-center">
+          <div className="text-zinc-600 text-[10px] uppercase tracking-[0.4em] font-bold animate-pulse">Loading room...</div>
+        </div>
       </div>
     );
   }
@@ -181,8 +192,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   if (error && !room) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-red-500">{error}</p>
-        <button onClick={() => router.push("/")} className="text-zinc-400 underline text-sm cursor-pointer">Back to Home</button>
+        <p className="text-red-500 font-semibold">{error}</p>
+        <button onClick={() => router.push("/")} className="text-zinc-500 hover:text-white text-sm transition-colors cursor-pointer">Back to Home</button>
       </div>
     );
   }
@@ -190,67 +201,87 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   // ─── LOBBY ───
   if (room?.status === "lobby") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-5xl md:text-7xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic leading-none tracking-tight" style={{ textShadow: "0 0 30px rgba(255, 68, 0, 0.4)" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+        <div className="ember-field" />
+
+        <div className="text-center mb-8 animate-fade-in relative z-10">
+          <h1 className="title-fire text-5xl md:text-7xl font-[family-name:var(--font-archivo)] uppercase italic leading-none tracking-tight">
             Hot Ones
           </h1>
-          <p className="text-xs text-zinc-500 tracking-[0.4em] uppercase mt-2 font-bold">Waiting Room</p>
+          <div className="flex justify-center mt-3">
+            <div className="live-badge" style={{ background: 'rgba(249, 115, 22, 0.06)', borderColor: 'rgba(249, 115, 22, 0.12)' }}>
+              <span className="text-[10px] text-orange-500/70 tracking-[0.3em] uppercase font-bold">Waiting Room</span>
+            </div>
+          </div>
         </div>
 
-        <div className="mb-8 text-center animate-slide-up">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-3 font-bold">Room Code</p>
+        <div className="mb-8 text-center animate-slide-up relative z-10">
+          <p className="text-zinc-600 text-[9px] uppercase tracking-[0.4em] mb-3 font-bold">Room Code</p>
           <button onClick={copyCode} className="flex gap-2 mx-auto cursor-pointer group">
             {code.toUpperCase().split("").map((char, i) => (
-              <div key={i} className="room-code-char group-hover:border-orange-600/50 transition-colors">{char}</div>
+              <div key={i} className="room-code-char group-hover:border-orange-600/40 transition-all duration-300" style={{ animationDelay: `${i * 80}ms` }}>{char}</div>
             ))}
           </button>
-          <p className="text-zinc-600 text-xs mt-2">{copied ? "Copied!" : "Tap to copy"}</p>
+          <p className="text-zinc-700 text-xs mt-3 font-medium transition-colors">{copied ? <span className="text-orange-500">Copied!</span> : "Tap to copy"}</p>
         </div>
 
         {!hasJoined && (
-          <div className="w-full max-w-sm mb-8 animate-slide-up">
+          <div className="w-full max-w-sm mb-8 animate-slide-up relative z-10" style={{ animationDelay: '150ms' }}>
             <div className="flex gap-2">
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && joinGame()} placeholder="Your name..."
-                className="flex-grow bg-zinc-900 border border-zinc-800 p-3 px-5 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-600 transition-colors" />
+                className="input-dark flex-grow p-3 px-5 rounded-lg font-semibold" />
               <button onClick={joinGame} disabled={!playerName.trim()}
-                className="bg-orange-600 hover:bg-orange-500 disabled:opacity-30 px-6 py-3 rounded-lg font-black uppercase text-black transition-colors cursor-pointer">Join</button>
+                className="btn-fire px-6 py-3 rounded-lg cursor-pointer text-sm">Join</button>
             </div>
-            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
+            {error && <p className="text-red-500 text-sm mt-2 text-center font-semibold">{error}</p>}
           </div>
         )}
 
-        <div className="w-full max-w-sm">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-3 font-bold text-center">Players ({challengers.length})</p>
+        <div className="w-full max-w-sm relative z-10">
+          <p className="text-zinc-600 text-[9px] uppercase tracking-[0.4em] mb-3 font-bold text-center">
+            Players ({challengers.length})
+          </p>
           <div className="space-y-2">
             {challengers.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 rounded-lg px-4 py-3 animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
-                <span className="text-orange-600 font-black text-sm w-6">{i + 1}</span>
+              <div key={c.id}
+                className="sauce-card flex items-center gap-3 rounded-xl px-4 py-3 animate-fade-in"
+                style={{ animationDelay: `${i * 80}ms` }}>
+                <span className="text-orange-600/60 font-black text-sm w-6 text-center">{i + 1}</span>
                 <span className="font-bold text-white">{c.name}</span>
-                <div className="ml-auto flex gap-1">
-                  {c.claim_id === myClaimId && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
-                  {c.claim_id === room!.host_claim_id && <span className="text-[9px] bg-orange-600 text-black px-1.5 py-0.5 rounded-full font-bold uppercase">Host</span>}
+                <div className="ml-auto flex gap-1.5">
+                  {c.claim_id === myClaimId && (
+                    <span className="text-[8px] bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold uppercase">You</span>
+                  )}
+                  {c.claim_id === room!.host_claim_id && (
+                    <span className="text-[8px] bg-orange-500/15 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full font-bold uppercase">Host</span>
+                  )}
                 </div>
               </div>
             ))}
-            {challengers.length === 0 && <p className="text-zinc-700 text-sm text-center py-4">No players yet...</p>}
+            {challengers.length === 0 && (
+              <p className="text-zinc-700 text-sm text-center py-6 font-medium">No players yet...</p>
+            )}
           </div>
         </div>
 
         {customQuestions.length > 0 && (
-          <p className="mt-4 text-zinc-600 text-[10px] uppercase tracking-widest text-center">
+          <p className="mt-4 text-zinc-600 text-[10px] uppercase tracking-[0.3em] text-center relative z-10 font-semibold">
             Custom questions loaded ({customQuestions.length})
           </p>
         )}
 
         {isHost && (
           <button onClick={startGame} disabled={challengers.length < 2}
-            className="mt-6 bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase text-lg px-12 py-4 rounded-xl transition-colors cursor-pointer">
+            className="btn-fire mt-8 text-lg px-14 py-4 rounded-xl cursor-pointer relative z-10 tracking-wide">
             {challengers.length < 2 ? "Waiting for players..." : "Start Game"}
           </button>
         )}
-        {!isHost && hasJoined && <p className="mt-8 text-zinc-500 text-sm animate-pulse">Waiting for host to start...</p>}
+        {!isHost && hasJoined && (
+          <p className="mt-8 text-zinc-600 text-[10px] uppercase tracking-[0.3em] animate-pulse relative z-10 font-bold">
+            Waiting for host to start...
+          </p>
+        )}
       </div>
     );
   }
@@ -263,47 +294,52 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       return b.level - a.level;
     });
     const winner = sorted[0];
+    const conqueredLastDab = winner && !winner.dnf && winner.level >= 10;
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <div className="text-center mb-10 animate-fade-in">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-2 font-bold">Game Over</p>
-          <h1 className="text-5xl md:text-7xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic leading-none tracking-tight" style={{ textShadow: "0 0 30px rgba(255, 68, 0, 0.4)" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+        <div className="ember-field" />
+
+        <div className="text-center mb-10 animate-fade-in relative z-10">
+          <p className="text-zinc-600 text-[9px] uppercase tracking-[0.5em] mb-3 font-bold">Game Over</p>
+          <h1 className="title-fire text-5xl md:text-7xl font-[family-name:var(--font-archivo)] uppercase italic leading-none tracking-tight">
             Results
           </h1>
         </div>
 
-        {winner && !winner.dnf && winner.level >= 10 && (
-          <div className="mb-8 text-center animate-slide-up">
-            <p className="text-4xl mb-2">&#x1F525;</p>
-            <p className="text-2xl font-black uppercase italic text-white">{winner.name}</p>
-            <p className="text-purple-400 text-sm font-bold uppercase tracking-widest">Conquered The Last Dab</p>
+        {conqueredLastDab && (
+          <div className="mb-10 text-center animate-slide-up relative z-10">
+            <div className="text-5xl mb-3" style={{ filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.5))' }}>&#x1F525;</div>
+            <p className="text-3xl font-black uppercase italic text-white tracking-tight">{winner.name}</p>
+            <p className="text-purple-400 text-xs font-bold uppercase tracking-[0.3em] mt-1">Conquered The Last Dab</p>
           </div>
         )}
 
-        <div className="w-full max-w-md space-y-3">
+        <div className="w-full max-w-md space-y-3 relative z-10">
           {sorted.map((c, i) => {
             const sauce = getCurrentSauce(c.level);
             const isWinner = i === 0 && !c.dnf;
             return (
               <div key={c.id}
-                className={`flex items-center gap-4 p-4 rounded-xl border animate-slide-up ${
-                  isWinner ? "bg-orange-600/10 border-orange-600/30" : c.dnf ? "bg-zinc-900/50 border-zinc-800 opacity-50" : "bg-zinc-900/80 border-zinc-800"
+                className={`flex items-center gap-4 p-4 rounded-xl animate-slide-up ${
+                  isWinner ? "leaderboard-winner" : c.dnf ? "leaderboard-card opacity-40" : "leaderboard-card"
                 }`}
-                style={{ animationDelay: `${i * 150}ms` }}>
-                <span className={`text-2xl font-black w-8 ${isWinner ? "text-orange-600" : "text-zinc-600"}`}>{i + 1}</span>
-                <div className="flex-grow">
+                style={{ animationDelay: `${i * 120}ms` }}>
+                <span className={`text-2xl font-black w-8 text-center ${isWinner ? "text-orange-500" : "text-zinc-700"}`}>{i + 1}</span>
+                <div className="flex-grow min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-lg uppercase italic">{c.name}</span>
-                    {c.claim_id === myClaimId && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
+                    <span className="font-black text-lg uppercase italic tracking-tight">{c.name}</span>
+                    {c.claim_id === myClaimId && (
+                      <span className="text-[8px] bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold uppercase">You</span>
+                    )}
                   </div>
-                  <span className="text-zinc-500 text-xs">{c.dnf ? "Tapped out" : sauce.name}</span>
+                  <span className="text-zinc-600 text-xs font-medium">{c.dnf ? "Tapped out" : sauce.name}</span>
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-black ${c.dnf ? "text-red-500" : "text-orange-600"}`}>
+                  <div className={`text-2xl font-black ${c.dnf ? "text-red-500/70" : isWinner ? "text-orange-500" : "text-zinc-400"}`}>
                     {c.dnf ? "DNF" : c.level}
                   </div>
-                  {!c.dnf && <div className="text-zinc-600 text-[10px]">/10</div>}
+                  {!c.dnf && <div className="text-zinc-700 text-[10px] font-bold">/10</div>}
                 </div>
               </div>
             );
@@ -311,7 +347,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         </div>
 
         <button onClick={() => router.push("/")}
-          className="mt-10 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase px-8 py-3 rounded-xl transition-colors cursor-pointer">
+          className="btn-ghost mt-10 px-10 py-3 rounded-xl cursor-pointer text-sm relative z-10">
           Play Again
         </button>
       </div>
@@ -331,51 +367,59 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const me = challengers.find((c) => c.claim_id === myClaimId);
   const iCompletedRound = me ? me.level >= round : false;
   const questionRevealed = room!.question_revealed;
+  const heat = getHeatIntensity(round);
+  const isLastDab = round === 10;
 
-  // Player status strip (reused)
   const playerStrip = (
-    <div className="flex flex-wrap justify-center gap-2 mt-4">
+    <div className="flex flex-wrap justify-center gap-2 mt-5">
       {challengers.map((c) => (
-        <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-          c.dnf ? "bg-red-900/30 text-red-400" : c.level >= round ? "bg-green-900/30 text-green-400" : "bg-zinc-800 text-zinc-500"
+        <div key={c.id} className={`player-chip relative ${
+          c.dnf ? "player-chip-dnf" : c.level >= round ? "player-chip-done" : "player-chip-active"
         }`}>
-          <span>{c.name}</span>
-          {c.dnf ? <span>&#x1F480;</span> : c.level >= round ? <span>&#x2713;</span> : <span>&#x1F525;</span>}
+          {recentlyLeveled[c.id] && <div className="fire-burst rounded-full" />}
+          <span className="font-semibold">{c.name}</span>
+          {c.dnf ? <span className="text-[10px]">&#x1F480;</span> : c.level >= round ? <span className="text-[10px]">&#x2713;</span> : <span className="text-[10px]">&#x1F525;</span>}
         </div>
       ))}
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       {/* Round transition overlay */}
       {roundTransition && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center animate-fade-in">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-4 font-bold">Round {round} of 10</p>
-          <h2 className="text-4xl md:text-6xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic text-center leading-tight px-4"
-            style={{ textShadow: "0 0 30px rgba(255, 68, 0, 0.5)" }}>
-            {sauce.name}
-          </h2>
-          <p className="text-zinc-400 mt-3 text-lg">{sauce.shu} SHU</p>
-          <div className="mt-8 flex gap-1">
-            {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className={`w-6 h-2 rounded-full transition-all duration-500 ${i < round ? getHeatColor(i + 1) : "bg-zinc-800"}`} />
-            ))}
+        <div className="fixed inset-0 z-50 round-transition-overlay flex flex-col items-center justify-center animate-fade-in">
+          <div className="animate-screen-shake">
+            <p className="text-zinc-500 text-[9px] uppercase tracking-[0.5em] mb-4 font-bold text-center">
+              Round {round} of 10
+            </p>
+            <h2 className="text-5xl md:text-7xl font-[family-name:var(--font-archivo)] uppercase italic text-center leading-tight px-4"
+              style={{ color: heat.color, textShadow: `0 0 40px ${heat.glow}`, filter: `drop-shadow(0 0 20px ${heat.glow})` }}>
+              {sauce.name}
+            </h2>
+            <p className="text-zinc-500 mt-3 text-lg text-center font-medium">{sauce.shu.toLocaleString()} SHU</p>
+            <div className="mt-8 flex gap-1.5 justify-center">
+              {Array.from({ length: 10 }, (_, i) => (
+                <div key={i} className={`w-7 h-2 rounded-full transition-all duration-500 ${
+                  i < round ? getHeatColor(i + 1) : "bg-zinc-800/50"
+                }`} style={i < round ? { boxShadow: `0 0 8px ${getHeatIntensity(i + 1).glow}` } : {}} />
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Top bar */}
-      <header className="flex items-center justify-between p-4 md:px-8">
+      <header className="flex items-center justify-between p-4 md:px-8 relative z-10">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic" style={{ textShadow: "0 0 10px rgba(255, 68, 0, 0.3)" }}>
+          <h1 className="title-fire text-xl font-[family-name:var(--font-archivo)] uppercase italic">
             Hot Ones
           </h1>
-          <span className="text-[9px] bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded font-bold uppercase">{code.toUpperCase()}</span>
+          <span className="text-[9px] bg-white/[0.03] border border-white/[0.06] text-zinc-500 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">{code.toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-3">
           {isHost && (
-            <button onClick={endGame} className="text-[10px] bg-zinc-800 hover:bg-red-900 text-zinc-500 hover:text-white px-3 py-1.5 rounded font-bold uppercase transition-colors cursor-pointer">
+            <button onClick={endGame} className="text-[10px] bg-white/[0.03] border border-white/[0.06] hover:bg-red-900/20 hover:border-red-900/30 text-zinc-500 hover:text-red-400 px-3 py-1.5 rounded-md font-bold uppercase transition-all cursor-pointer">
               End
             </button>
           )}
@@ -383,53 +427,59 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       </header>
 
       {/* Main game area */}
-      <main className="flex-grow flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full">
-        {/* Round + Sauce */}
+      <main className="flex-grow flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full relative z-10">
+        {/* Round + Sauce header */}
         <div className="text-center mb-6">
-          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Round {round} of 10</p>
-          <h2 className="text-3xl md:text-5xl font-[family-name:var(--font-archivo)] uppercase text-orange-600 italic mt-1"
-            style={{ textShadow: "0 0 20px rgba(255, 68, 0, 0.4)" }}>
+          <p className="text-zinc-600 text-[9px] uppercase tracking-[0.5em] font-bold">Round {round} of 10</p>
+          <h2 className="text-3xl md:text-5xl font-[family-name:var(--font-archivo)] uppercase italic mt-1 tracking-tight"
+            style={{ color: heat.color, textShadow: `0 0 30px ${heat.glow}` }}>
             {sauce.name}
           </h2>
-          <p className="text-zinc-500 text-sm mt-1">{sauce.shu} SHU</p>
+          <p className="text-zinc-600 text-sm mt-1 font-medium">{sauce.shu.toLocaleString()} SHU</p>
         </div>
 
-        {/* Heat progress */}
+        {/* Heat progress bar */}
         <div className="flex gap-1.5 mb-8 w-full max-w-xs">
           {Array.from({ length: 10 }, (_, i) => (
-            <div key={i} className={`flex-grow h-2 rounded-full transition-all duration-700 ${i < round ? getHeatColor(i + 1) : "bg-zinc-800/50"}`} />
+            <div key={i}
+              className={`flex-grow heat-segment ${i < round ? `heat-segment-active ${getHeatColor(i + 1)}` : "heat-segment-inactive"}`}
+              style={i < round ? { '--segment-glow': getHeatIntensity(i + 1).glow } as React.CSSProperties : {}} />
           ))}
         </div>
 
         {/* Phase 1: Eat Your Wing */}
         {!questionRevealed ? (
           <div className="w-full">
-            <div className="sauce-card rounded-2xl p-6 md:p-8 text-center border-t-4 border-orange-600">
-              <p className="text-3xl mb-3">&#x1F357;</p>
-              <p className="text-xl font-black uppercase italic text-white">Eat Your Wing!</p>
-              <p className="text-zinc-500 text-sm mt-2">Apply {sauce.name} and eat together</p>
+            <div className={`sauce-card-active rounded-2xl p-6 md:p-8 text-center border-t-2 ${isLastDab ? 'last-dab' : ''}`}
+              style={{ borderTopColor: isLastDab ? '#a855f7' : heat.color }}>
+              <div className="text-4xl mb-3" style={{ filter: `drop-shadow(0 0 15px ${heat.glow})` }}>&#x1F357;</div>
+              <p className="text-xl font-black uppercase italic text-white tracking-tight">Eat Your Wing!</p>
+              <p className="text-zinc-500 text-sm mt-2 font-medium">
+                Apply <span style={{ color: heat.color }}>{sauce.name}</span> and eat together
+              </p>
 
               {me && !me.dnf && (
                 <div className="mt-6 flex flex-col items-center gap-3">
                   {!iCompletedRound ? (
                     <button onClick={() => markComplete(me.id, me.claim_id)}
-                      className="bg-orange-600 hover:bg-orange-500 text-black font-black uppercase px-8 py-3 rounded-xl transition-colors cursor-pointer text-sm">
+                      className="btn-fire px-10 py-3 rounded-xl cursor-pointer text-sm tracking-wide"
+                      style={isLastDab ? { background: 'linear-gradient(135deg, #7c3aed, #a855f7)', boxShadow: '0 0 30px rgba(168, 85, 247, 0.3)' } : {}}>
                       I Ate It &#x1F525;
                     </button>
                   ) : (
-                    <span className="text-green-500 font-bold text-sm uppercase">&#x2713; Done</span>
+                    <span className="text-green-400 font-bold text-sm uppercase tracking-wider">&#x2713; Done</span>
                   )}
                   <button onClick={() => toggleDNF(me.id, me.dnf, me.claim_id)}
-                    className="text-zinc-600 hover:text-red-500 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
+                    className="text-zinc-600 hover:text-red-400 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
                     I Tap Out
                   </button>
                 </div>
               )}
               {me?.dnf && (
                 <div className="mt-6 flex flex-col items-center gap-2">
-                  <span className="text-red-500 font-bold text-sm uppercase">You tapped out</span>
+                  <span className="text-red-400 font-bold text-sm uppercase">You tapped out</span>
                   <button onClick={() => toggleDNF(me.id, me.dnf, me.claim_id)}
-                    className="text-zinc-600 hover:text-green-500 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
+                    className="text-zinc-600 hover:text-green-400 text-xs font-bold uppercase transition-colors cursor-pointer py-1 px-3">
                     Get Back In?
                   </button>
                 </div>
@@ -437,12 +487,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
               {isHost && (
                 <button onClick={revealQuestion}
-                  className="mt-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase px-6 py-2.5 rounded-lg transition-colors cursor-pointer text-xs">
+                  className="btn-ghost mt-6 px-8 py-2.5 rounded-lg cursor-pointer text-xs">
                   Reveal Question
                 </button>
               )}
               {!isHost && (
-                <p className="mt-6 text-zinc-600 text-[10px] uppercase tracking-widest animate-pulse">
+                <p className="mt-6 text-zinc-700 text-[10px] uppercase tracking-[0.3em] animate-pulse font-bold">
                   Host will reveal the question...
                 </p>
               )}
@@ -452,24 +502,25 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         ) : (
           /* Phase 2: Question Revealed */
           <div className="w-full animate-slide-up">
-            <div className="sauce-card rounded-2xl p-6 md:p-8 text-center border-t-4" style={{
+            <div className={`sauce-card-active rounded-2xl p-6 md:p-8 text-center border-t-2 ${isLastDab ? 'last-dab' : ''}`} style={{
               borderTopColor: question.type === "roast" ? "#ef4444" : question.type === "wouldyourather" ? "#a855f7" : question.type === "challenge" ? "#eab308" : "#3b82f6"
             }}>
-              <p className={`text-[10px] uppercase tracking-widest font-black mb-4 ${getTypeColor(question.type)}`}>
+              <p className={`text-[9px] uppercase tracking-[0.3em] font-black mb-5 ${getTypeColor(question.type)}`}>
                 {getTypeLabel(question.type)}
               </p>
               <p className="text-xl md:text-2xl font-bold text-white leading-relaxed">
                 {questionText}
               </p>
               {question.type === "truth" && (
-                <p className="text-zinc-500 text-xs mt-4 italic">Answer honestly... or take a dab of {sauce.name}</p>
+                <p className="text-zinc-600 text-xs mt-4 italic font-medium">
+                  Answer honestly... or take a dab of <span style={{ color: heat.color }}>{sauce.name}</span>
+                </p>
               )}
 
-              {/* DNF option still available during question */}
               {me && !me.dnf && !iCompletedRound && (
-                <div className="mt-5 flex flex-col items-center gap-2">
+                <div className="mt-6 flex flex-col items-center gap-2">
                   <button onClick={() => markComplete(me.id, me.claim_id)}
-                    className="bg-orange-600/20 hover:bg-orange-600/30 text-orange-500 font-bold uppercase px-6 py-2 rounded-lg transition-colors cursor-pointer text-xs border border-orange-600/20">
+                    className="text-orange-500 hover:text-orange-400 font-bold uppercase px-6 py-2 rounded-lg transition-colors cursor-pointer text-xs border border-orange-500/15 hover:border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10">
                     I Ate It &#x1F525;
                   </button>
                 </div>
@@ -478,17 +529,16 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
             {playerStrip}
 
-            {/* Host: next round */}
             {isHost && (
-              <div className="flex justify-center mt-6">
+              <div className="flex justify-center mt-8">
                 <button onClick={nextRound}
-                  className="bg-orange-600 hover:bg-orange-500 text-black font-black uppercase px-10 py-3 rounded-xl transition-colors cursor-pointer">
+                  className="btn-fire px-12 py-3 rounded-xl cursor-pointer tracking-wide">
                   {round >= 10 ? "Finish Game" : "Next Round"}
                 </button>
               </div>
             )}
             {!isHost && (
-              <p className="text-center mt-6 text-zinc-600 text-[10px] uppercase tracking-widest animate-pulse">
+              <p className="text-center mt-8 text-zinc-700 text-[10px] uppercase tracking-[0.3em] animate-pulse font-bold">
                 Host will advance to the next round...
               </p>
             )}
