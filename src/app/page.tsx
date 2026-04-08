@@ -8,10 +8,17 @@ import { generateRoomCode } from "@/lib/constants";
 export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
+  const [hostName, setHostName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   async function createRoom() {
+    if (!hostName.trim()) {
+      setError("Enter your name first.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -19,20 +26,28 @@ export default function Home() {
     let code = generateRoomCode();
 
     for (let attempt = 0; attempt < 5; attempt++) {
-      const { error: insertError } = await supabase.from("rooms").insert({
-        code,
-        host_claim_id: hostClaimId,
-        status: "lobby",
-      });
+      const { data: roomData, error: insertError } = await supabase
+        .from("rooms")
+        .insert({ code, host_claim_id: hostClaimId, status: "lobby" })
+        .select("id")
+        .single();
 
-      if (!insertError) {
+      if (!insertError && roomData) {
+        // Auto-join the host as a player
+        await supabase.from("challengers").insert({
+          name: hostName.trim(),
+          level: 0,
+          dnf: false,
+          claim_id: hostClaimId,
+          room_id: roomData.id,
+        });
+
         localStorage.setItem("hot_ones_claim_id", hostClaimId);
-        localStorage.setItem(`hot_ones_host_${code}`, "true");
         router.push(`/room/${code}`);
         return;
       }
 
-      if (insertError.code === "23505") {
+      if (insertError?.code === "23505") {
         code = generateRoomCode();
         continue;
       }
@@ -60,9 +75,15 @@ export default function Home() {
       .from("rooms")
       .select("id, code, status")
       .eq("code", trimmed)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !data) {
+    if (fetchError) {
+      setError(`Connection error: ${fetchError.message}`);
+      setLoading(false);
+      return;
+    }
+
+    if (!data) {
       setError("Room not found. Check your code.");
       setLoading(false);
       return;
@@ -95,13 +116,33 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-sm space-y-4 animate-slide-up">
-        <button
-          onClick={createRoom}
-          disabled={loading}
-          className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-black font-black uppercase text-lg py-4 rounded-xl transition-colors cursor-pointer"
-        >
-          {loading ? "..." : "Create Room"}
-        </button>
+        {!showCreate ? (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black uppercase text-lg py-4 rounded-xl transition-colors cursor-pointer"
+          >
+            Create Room
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={hostName}
+              onChange={(e) => setHostName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && createRoom()}
+              placeholder="Your name..."
+              autoFocus
+              className="flex-grow bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-600 transition-colors"
+            />
+            <button
+              onClick={createRoom}
+              disabled={loading || !hostName.trim()}
+              className="bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase px-6 rounded-xl transition-colors cursor-pointer"
+            >
+              {loading ? "..." : "Go"}
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 text-zinc-600 text-xs uppercase tracking-widest">
           <div className="flex-grow h-px bg-zinc-800" />

@@ -54,7 +54,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         .from("rooms")
         .select("*")
         .eq("code", code.toUpperCase())
-        .single();
+        .maybeSingle();
 
       if (roomError || !roomData) {
         setError("Room not found.");
@@ -288,13 +288,13 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         </div>
 
         {/* Host Controls */}
-        {isHost && hasJoined && (
+        {isHost && (
           <button
             onClick={startGame}
-            disabled={challengers.length < 1}
+            disabled={challengers.length < 2}
             className="mt-8 bg-orange-600 hover:bg-orange-500 disabled:opacity-30 text-black font-black uppercase text-lg px-12 py-4 rounded-xl transition-colors cursor-pointer"
           >
-            Start Game
+            {challengers.length < 2 ? "Waiting for players..." : "Start Game"}
           </button>
         )}
 
