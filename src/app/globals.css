@@ -27,6 +27,16 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
 }
@@ -35,11 +45,19 @@ body {
   animation: slideUp 0.6s ease-out forwards;
 }
 
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
 .sauce-card {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   background: rgba(15, 15, 15, 0.9);
   backdrop-filter: blur(10px);
   border: 1px solid #222;
+}
+
+.sauce-card:hover {
+  border-color: #333;
 }
 
 .dnf-mode { opacity: 0.4; filter: grayscale(0.8); }
@@ -65,7 +83,7 @@ body {
 }
 
 .room-code-char {
-  font-family: "Archivo Black", sans-serif;
+  font-family: var(--font-archivo), "Archivo Black", sans-serif;
   font-size: 3rem;
   line-height: 1;
   background: rgba(15, 15, 15, 0.9);
@@ -78,4 +96,30 @@ body {
   border-radius: 0.75rem;
   color: #ea580c;
   text-shadow: 0 0 10px rgba(255, 68, 0, 0.3);
+}
+
+/* Smooth page transitions */
+main, .page-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(234, 88, 12, 0.3);
+  color: white;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
