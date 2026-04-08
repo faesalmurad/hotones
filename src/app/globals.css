@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(circle at center, #1a0800 0%, #050505 100%);
+  color: #eee;
+  min-height: 100vh;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.3); }
+  50% { box-shadow: 0 0 50px rgba(147, 51, 234, 0.7); }
+}
+
+@keyframes fireFlash {
+  0% { opacity: 0; transform: scale(0.8); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.sauce-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(15, 15, 15, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid #222;
+}
+
+.dnf-mode { opacity: 0.4; filter: grayscale(0.8); }
+
+.last-dab {
+  box-shadow: 0 0 40px rgba(147, 51, 234, 0.5);
+  border-color: #9333ea !important;
+  animation: pulseGlow 2s infinite;
+}
+
+.fire-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: radial-gradient(circle, rgba(255,100,0,0.6) 0%, transparent 70%);
+  animation: fireFlash 0.8s ease-out forwards;
+}
+
+.locked-overlay {
+  background: rgba(0,0,0,0.5);
+  cursor: not-allowed;
+}
+
+.room-code-char {
+  font-family: "Archivo Black", sans-serif;
+  font-size: 3rem;
+  line-height: 1;
+  background: rgba(15, 15, 15, 0.9);
+  border: 2px solid #333;
+  width: 4.5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: #ea580c;
+  text-shadow: 0 0 10px rgba(255, 68, 0, 0.3);
 }
